@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 type ChatMessage = {
-	role: "user" | "assistant";
+	role: "user" | "agent1" | "agent2";
 	content: string;
 	timestamp: Date;
 };
@@ -33,13 +33,13 @@ export default function ChatInterface() {
 		ws.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data);
-				// Minimal protocol:
-				// - { type: "message", content: string } -> append assistant message
-				// - { type: "typing" } -> show typing indicator
-				if (data.type === "message") {
+				// Protocol:
+				// - { type: "message", role: "agent1" | "agent2", content: string } -> append agent message
+				// - { type: "typing", agent?: "agent1" | "agent2" } -> show typing indicator
+				if (data.type === "message" && (data.role === "agent1" || data.role === "agent2")) {
 					setMessages((prev) => [
 						...prev,
-						{ role: "assistant", content: data.content, timestamp: new Date() },
+						{ role: data.role, content: data.content, timestamp: new Date() },
 					]);
 					setIsTyping(false);
 				} else if (data.type === "typing") {
@@ -103,12 +103,25 @@ export default function ChatInterface() {
 					)}
 					{messages.map((message, index) => (
 						<div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-							<div
-								className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-									message.role === "user" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
-								}`}
-							>
-								<p className="whitespace-pre-wrap break-words">{message.content}</p>
+							<div className="flex flex-col max-w-[80%]">
+								{message.role !== "user" && (
+									<span className={`text-xs font-semibold mb-1 px-1 ${
+										message.role === "agent1" ? "text-purple-600" : "text-green-600"
+									}`}>
+										{message.role === "agent1" ? "Agent 1" : "Agent 2"}
+									</span>
+								)}
+								<div
+									className={`rounded-2xl px-4 py-3 ${
+										message.role === "user"
+											? "bg-blue-500 text-white"
+											: message.role === "agent1"
+											? "bg-purple-100 text-purple-900 border border-purple-200"
+											: "bg-green-100 text-green-900 border border-green-200"
+									}`}
+								>
+									<p className="whitespace-pre-wrap break-words">{message.content}</p>
+								</div>
 							</div>
 						</div>
 					))}
