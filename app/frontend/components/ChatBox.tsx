@@ -1,18 +1,26 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 
+// Define a type for messages
+type Message = {
+  role: 'user' | 'assistant';
+  content: any;
+  timestamp: Date;
+  agent?: string;
+};
+
 export default function ChatInterface() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
-  const wsRef = useRef(null);
-  const inputRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     // Initialize WebSocket connection
-    // Replace with your WebSocket URL
     const ws = new WebSocket('ws://localhost:8080');
     
     ws.onopen = () => {
@@ -55,19 +63,18 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
+  // Extracted message sending logic
+  const sendMessage = () => {
     if (!input.trim() || !isConnected) return;
 
-    const userMessage = {
+    const userMessage: Message = {
       role: 'user',
       content: input,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    
+
     // Send message through WebSocket
     wsRef.current?.send(JSON.stringify({
       type: 'message',
@@ -76,6 +83,11 @@ export default function ChatInterface() {
 
     setInput('');
     setIsTyping(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    sendMessage();
   };
 
   return (
@@ -102,22 +114,30 @@ export default function ChatInterface() {
             </div>
           )}
           
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          {messages.map((message, index) => {
+            // If content is an object, try to extract a string
+            let content = message.content;
+            if (typeof content === 'object' && content !== null) {
+              // Try to extract a string from known keys
+              content = content.response || content.content || JSON.stringify(content);
+            }
+            return (
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap break-words">{content}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isTyping && (
             <div className="flex justify-start">
@@ -147,12 +167,12 @@ export default function ChatInterface() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleSubmit(e);
+                    sendMessage();
                   }
                 }}
                 placeholder="Type a message..."
                 className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                rows="1"
+                rows={1}
                 style={{
                   minHeight: '52px',
                   maxHeight: '200px'

@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 type ChatMessage = {
-	role: "user" | "agent1" | "agent2";
+	role: "user" | "Olaf" | "Minstrel";
 	content: string;
 	timestamp: Date;
 };
@@ -34,9 +34,9 @@ export default function ChatInterface() {
 			try {
 				const data = JSON.parse(event.data);
 				// Protocol:
-				// - { type: "message", role: "agent1" | "agent2", content: string } -> append agent message
-				// - { type: "typing", agent?: "agent1" | "agent2" } -> show typing indicator
-				if (data.type === "message" && (data.role === "agent1" || data.role === "agent2")) {
+				// - { type: "message", role: "Olaf" | "Minstrel", content: string } -> append agent message
+				// - { type: "typing", agent?: "Olaf" | "Minstrel" } -> show typing indicator
+				if (data.type === "message" && (data.role === "Olaf" || data.role === "Minstrel")) {
 					setMessages((prev) => [
 						...prev,
 						{ role: data.role, content: data.content, timestamp: new Date() },
@@ -106,16 +106,16 @@ export default function ChatInterface() {
 							<div className="flex flex-col max-w-[80%]">
 								{message.role !== "user" && (
 									<span className={`text-xs font-semibold mb-1 px-1 ${
-										message.role === "agent1" ? "text-purple-600" : "text-green-600"
+										message.role === "Olaf" ? "text-purple-600" : "text-green-600"
 									}`}>
-										{message.role === "agent1" ? "Agent 1" : "Agent 2"}
+										{message.role === "Olaf" ? "Olaf" : "Minstrel"}
 									</span>
 								)}
 								<div
 									className={`rounded-2xl px-4 py-3 ${
 										message.role === "user"
 											? "bg-blue-500 text-white"
-											: message.role === "agent1"
+											: message.role === "Olaf"
 											? "bg-purple-100 text-purple-900 border border-purple-200"
 											: "bg-green-100 text-green-900 border border-green-200"
 									}`}
